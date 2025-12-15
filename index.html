@@ -1,53 +1,99 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>General Consultancy Progress</title>
+
+  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+    select, input, button {
+      padding: 8px;
+      margin-top: 6px;
+      width: 300px;
+    }
+    button {
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
 <h2>Progress Entry</h2>
 
+<!-- Google Login Button -->
 <div id="login"></div>
 
-<form id="form" style="display:none;">
+<!-- Form (hidden until login) -->
+<form id="form" style="display:none; margin-top:20px;">
   <label>DYCE</label><br>
-  <select id="column"></select><br><br>
+  <select id="column" required></select><br><br>
 
   <label>Category</label><br>
-  <select id="row"></select><br><br>
+  <select id="row" required></select><br><br>
 
   <label>Entry</label><br>
-  <input id="text" placeholder="Enter details" required /><br><br>
+  <input id="text" placeholder="Enter details" required><br><br>
 
-  <button>Submit</button>
+  <button type="submit">Submit</button>
 </form>
 
 <script>
+/* =======================
+   CONFIG – CHANGE THESE
+   ======================= */
+const CLIENT_ID = "893321431924-61hf4pr4dbi5ssc2qs7hhuv0pq9tguo7.apps.googleusercontent.com";
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSOhFF-hxZc58fSRakkhhbGX9s7vgZN7HAoYSW3eCpf7uIsIa97ob6J70qlLxi-q98/exec";
 
-google.accounts.id.initialize({
-  client_id: "893321431924-61hf4pr4dbi5ssc2qs7hhuv0pq9tguo7.apps.googleusercontent.com",
-  callback: onLogin
-});
+/* =======================
+   GOOGLE LOGIN
+   ======================= */
+window.onload = function () {
 
-google.accounts.id.renderButton(
-  document.getElementById("login"),
-  { theme: "outline", size: "large" }
-);
+  if (!window.google || !google.accounts || !google.accounts.id) {
+    console.error("Google Identity Services not loaded");
+    return;
+  }
 
-function onLogin() {
-  form.style.display = "block";
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: onLogin
+  });
 
+  google.accounts.id.renderButton(
+    document.getElementById("login"),
+    { theme: "outline", size: "large" }
+  );
+};
+
+/* =======================
+   AFTER LOGIN
+   ======================= */
+function onLogin(response) {
+  document.getElementById("form").style.display = "block";
+
+  // Load rows & columns from sheet
   fetch(SCRIPT_URL)
-    .then(r => r.json())
-    .then(d => {
-      d.columns.forEach(c => column.add(new Option(c, c)));
-      d.rows.forEach(r => row.add(new Option(r, r)));
+    .then(res => res.json())
+    .then(data => {
+      data.columns.forEach(c =>
+        column.add(new Option(c, c))
+      );
+      data.rows.forEach(r =>
+        row.add(new Option(r, r))
+      );
     });
 }
 
-form.onsubmit = e => {
+/* =======================
+   SUBMIT DATA
+   ======================= */
+form.onsubmit = function (e) {
   e.preventDefault();
 
   fetch(SCRIPT_URL, {
@@ -58,7 +104,7 @@ form.onsubmit = e => {
       text: text.value
     })
   }).then(() => {
-    alert("Entry saved");
+    alert("Entry saved successfully");
     text.value = "";
   });
 };
@@ -66,3 +112,4 @@ form.onsubmit = e => {
 
 </body>
 </html>
+
