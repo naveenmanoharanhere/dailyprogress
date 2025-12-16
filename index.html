@@ -56,10 +56,11 @@
 
 <script>
 /* ======================
-   CONFIG (CHANGE THESE)
+   CONFIG
    ====================== */
 const CLIENT_ID =
   "893321431924-61hf4pr4dbi5ssc2qs7hhuv0pq9tguo7.apps.googleusercontent.com";
+
 const SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbxOoaC0bDa-Lmq1HEUSD9vav7oVDtkrjYB9SGbJsTqKEvUzHViKNCJ3pJnCDg0DxkGL/exec";
 
@@ -99,10 +100,15 @@ function onLogin(response) {
 
   document.getElementById("form").style.display = "block";
 
-  // Load dropdown values (from TEMPLATE)
+  console.log("Logged in as:", userEmail);
+  console.log("Fetching dropdown data from:", SCRIPT_URL);
+
   fetch(SCRIPT_URL)
-    .then(res => res.json())
-    .then(data => {
+    .then(res => res.text())
+    .then(text => {
+      console.log("Dropdown raw response:", text);
+      const data = JSON.parse(text);
+
       column.innerHTML = "";
       row.innerHTML = "";
 
@@ -112,6 +118,10 @@ function onLogin(response) {
       data.rows.forEach(r =>
         row.add(new Option(r, r))
       );
+    })
+    .catch(err => {
+      console.error("Failed to load dropdowns:", err);
+      alert("Failed to load DYCE / Category list");
     });
 }
 
@@ -122,20 +132,37 @@ form.onsubmit = function (e) {
   e.preventDefault();
 
   const payload = {
-    date: date.value,          // YYYY-MM-DD
-    column: column.value,      // DYCE
-    row: row.value,            // Category / Location
-    text: text.value,          // Entry text
-    email: userEmail           // Logged-in account
+    date: document.getElementById("date").value,
+    column: column.value,
+    row: row.value,
+    text: text.value,
+    email: userEmail
   };
+
+  console.log("Submitting payload:", payload);
 
   fetch(SCRIPT_URL, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify(payload)
-  }).then(() => {
-    alert("Entry saved successfully");
-    text.value = "";
-  });
+  })
+    .then(res => res.text())
+    .then(responseText => {
+      console.log("Server response:", responseText);
+
+      if (responseText === "SUCCESS") {
+        alert("Entry saved successfully");
+        text.value = "";
+      } else {
+        alert("Server error: " + responseText);
+      }
+    })
+    .catch(err => {
+      console.error("Submission failed:", err);
+      alert("Submission failed. Check console.");
+    });
 };
 </script>
 
