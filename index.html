@@ -3,153 +3,102 @@
 <head>
   <meta charset="UTF-8">
   <title>General Consultancy Progress</title>
-
-  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-    }
-    label {
-      font-weight: bold;
-    }
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    label { font-weight: bold; }
     select, input, button {
       padding: 8px;
       margin-top: 6px;
       width: 320px;
     }
-    button {
-      cursor: pointer;
-    }
+    button { cursor: pointer; }
   </style>
 </head>
 <body>
 
 <h2>Progress Entry</h2>
 
-<!-- Google Login -->
 <div id="login"></div>
 
-<!-- Entry Form -->
 <form id="form" style="display:none; margin-top:20px;">
-
-  <!-- DATE -->
   <label>Date</label><br>
   <input type="date" id="date" required><br><br>
 
-  <!-- DYCE -->
   <label>DYCE</label><br>
   <select id="column" required></select><br><br>
 
-  <!-- CATEGORY / LOCATION -->
   <label>Category / Location</label><br>
   <select id="row" required></select><br><br>
 
-  <!-- TEXT -->
   <label>Entry</label><br>
-  <input id="text" placeholder="Enter details" required><br><br>
+  <input id="text" required><br><br>
 
   <button type="submit">Submit</button>
 </form>
 
 <script>
-/* ======================
-   CONFIG
-   ====================== */
 const CLIENT_ID =
-  "893321431924-61hf4pr4dbi5ssc2qs7hhuv0pq9tguo7.apps.googleusercontent.com";
+"893321431924-61hf4pr4dbi5ssc2qs7hhuv0pq9tguo7.apps.googleusercontent.com";
 
 const SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxOoaC0bDa-Lmq1HEUSD9vav7oVDtkrjYB9SGbJsTqKEvUzHViKNCJ3pJnCDg0DxkGL/exec";
+"https://script.google.com/macros/s/AKfycbxOoaC0bDa-Lmq1HEUSD9vav7oVDtkrjYB9SGbJsTqKEvUzHViKNCJ3pJnCDg0DxkGL/exec";
 
-/* ======================
-   STATE
-   ====================== */
 let userEmail = "";
 
-/* ======================
-   GOOGLE LOGIN
-   ====================== */
-window.onload = function () {
+window.onload = () => {
   google.accounts.id.initialize({
     client_id: CLIENT_ID,
     callback: onLogin
   });
-
   google.accounts.id.renderButton(
     document.getElementById("login"),
     { theme: "outline", size: "large" }
   );
 };
 
-/* ======================
-   AFTER LOGIN
-   ====================== */
 function onLogin(response) {
-  const payload = JSON.parse(
-    atob(response.credential.split(".")[1])
-  );
-
+  const payload = JSON.parse(atob(response.credential.split(".")[1]));
   userEmail = payload.email;
 
-  // Default date = today
-  document.getElementById("date").value =
-    new Date().toISOString().split("T")[0];
-
-  document.getElementById("form").style.display = "block";
+  date.value = new Date().toISOString().split("T")[0];
+  form.style.display = "block";
 
   fetch(SCRIPT_URL)
-    .then(res => res.json())
-    .then(data => {
+    .then(r => r.json())
+    .then(d => {
       column.innerHTML = "";
       row.innerHTML = "";
-
-      data.columns.forEach(c =>
-        column.add(new Option(c, c))
-      );
-      data.rows.forEach(r =>
-        row.add(new Option(r, r))
-      );
+      d.columns.forEach(c => column.add(new Option(c, c)));
+      d.rows.forEach(r => row.add(new Option(r, r)));
     })
-    .catch(err => {
-      console.error("Dropdown fetch failed:", err);
-      alert("Failed to load DYCE / Category data");
-    });
+    .catch(() => alert("Failed to load dropdowns"));
 }
 
-/* ======================
-   SUBMIT ENTRY
-   ====================== */
-form.onsubmit = function (e) {
+form.onsubmit = e => {
   e.preventDefault();
-
-  const payload = {
-    date: document.getElementById("date").value,
-    column: column.value,
-    row: row.value,
-    text: text.value,
-    email: userEmail
-  };
 
   fetch(SCRIPT_URL, {
     method: "POST",
-    body: JSON.stringify(payload) // ❗ NO headers (preflight-safe)
-  })
-    .then(res => res.text())
-    .then(responseText => {
-      if (responseText === "SUCCESS") {
-        alert("Entry saved successfully");
-        text.value = "";
-      } else {
-        alert("Server error: " + responseText);
-      }
+    body: JSON.stringify({
+      date: date.value,
+      column: column.value,
+      row: row.value,
+      text: text.value,
+      email: userEmail
     })
-    .catch(err => {
-      console.error("Submission failed:", err);
-      alert("Submission failed. Check console.");
-    });
+  })
+  .then(r => r.text())
+  .then(t => {
+    if (t === "SUCCESS") {
+      alert("Entry saved successfully");
+      text.value = "";
+    } else {
+      alert(t);
+    }
+  })
+  .catch(() => alert("Submission failed"));
 };
 </script>
 
